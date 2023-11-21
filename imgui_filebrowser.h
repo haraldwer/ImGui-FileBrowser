@@ -28,7 +28,7 @@ namespace ImGui
         static std::string GetEditedPath(const std::string& InPath); 
         
         void Refresh();
-        void RefreshHint();
+        void RefreshGuess();
         
         bool TryPopPath();
         bool TryApplyPath(const std::string& InString);

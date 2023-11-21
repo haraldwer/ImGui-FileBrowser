@@ -31,7 +31,7 @@ inline std::string ImGuiStdStringRemove(const std::string& InStr, const std::str
 
 std::string ImGui::FileBrowser::GetLabel() const
 {
-    return "File picker##" + OriginalPath;
+    return "File Browser##" + OriginalPath;
 }
 
 std::string ImGui::FileBrowser::GetRelative(const std::string& InPath)
@@ -119,7 +119,7 @@ bool ImGui::FileBrowser::FetchInternal(std::string& OutPath)
         EditContent();
         Spacing();
 
-        
+        // Extension text in the bottom right
         std::string ext;
         switch (Option)
         {
@@ -135,9 +135,13 @@ bool ImGui::FileBrowser::FetchInternal(std::string& OutPath)
             }
             break;
         }
-        Text((" Ext: " + ext).c_str());
-        SameLine();
-        
+        if (!ext.empty())
+        {
+            Text((" Ext: " + ext).c_str());
+            SameLine();
+        }
+
+        // Select / Cancel buttons
         const ImGuiStyle style = GetStyle();
         constexpr ImVec2 buttonSize(100.f, 0.f);
         const float widthNeeded = buttonSize.x + style.ItemSpacing.x + buttonSize.x;
@@ -204,10 +208,10 @@ void ImGui::FileBrowser::Refresh()
     }
     
     // 3. Refresh hint
-    RefreshHint();
+    RefreshGuess();
 }
 
-void ImGui::FileBrowser::RefreshHint()
+void ImGui::FileBrowser::RefreshGuess()
 {
     std::string editedPath = GetEditedPath(EditedPath);
     const std::filesystem::path path(GetRelative(editedPath));
@@ -282,7 +286,7 @@ void ImGui::FileBrowser::EditNavigation()
             TryApplyPath(GetEditedPath(EditedPath));
     }
     if (IsItemEdited())
-        RefreshHint();
+        RefreshGuess();
     if (IsItemActive())
     {
         if (IsKeyDown(ImGuiKey_Tab))

@@ -1,5 +1,5 @@
 # ImGui FileBrowser
-A simple file-browser for ImGui
+A simple file-browser for [dear-imgui](https://github.com/ocornut/imgui). 
 
 ![IMG](./screenshots/0.png)
 

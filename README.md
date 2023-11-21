@@ -16,6 +16,8 @@ bool ImGui::FetchFileBrowserResult(std::string& OutPath);
 There are some QOL tricks in the browser: 
  - Write ".." in the navigation-bar to go up one directory
  - Press tab when editing the navigation-bar to auto-complete
+ - You can specify a base directory by changing the path in ``GetRelative()`` and ``GetLocal()``. It is currently set to ``..\\content\\``. 
+
 
 ## Example
 ```cpp

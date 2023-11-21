@@ -160,7 +160,8 @@ bool ImGui::FileBrowser::FetchInternal(std::string& OutPath)
                 OutPath = Path; 
                 break;
             case FileBrowserOption::FILE:
-                OutPath = Path + "\\" + Selected;
+                OutPath = Selected.empty() ?
+                    OriginalPath : Path + "\\" + Selected;
                 break;
             }
             while (OutPath.starts_with('\\'))
@@ -328,13 +329,19 @@ void ImGui::FileBrowser::EditContent()
                     newDir = dir;
                     potentialDir = ""; 
                 }
-                potentialDir = dir; 
+                Selected = ""; 
+                potentialDir = dir;
             }
         }
 
         for (auto& file : Files)
+        {
             if (Selectable(file.c_str(), file == Selected))
+            {
                 Selected = file;
+                potentialDir = ""; 
+            }
+        }
 
         if (!newDir.empty())
             TryApplyPath(Path + "\\" + newDir);

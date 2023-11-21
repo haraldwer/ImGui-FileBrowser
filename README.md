@@ -1,14 +1,14 @@
 # ImGui FileBrowser
 A simple file-browser for ImGui
 
-![[screenshots/0.png]]
+![IMG](./screenshots/0.png)
 
 ## Usage
 1. Add ``imgui_filebrowser.cpp`` to your source files. 
 2. Include ``imgui_filebrowser.h``. 
 
 There are two functions: 
-```
+```cpp
 bool ImGui::OpenFileBrowser(const std::string& InPath, FileBrowserOption InOption = FileBrowserOption::FILE, const std::set<std::string>& InExt = {});
 bool ImGui::FetchFileBrowserResult(std::string& OutPath);
 ```
@@ -18,7 +18,7 @@ There are some QOL tricks in the browser:
  - Press tab when editing the navigation-bar to auto-complete
 
 ## Example
-```
+```cpp
 if (ImGui::Button("Pick file"))
 	ImGui::OpenFileBrowser(defaultPath);
 

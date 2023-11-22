@@ -60,11 +60,11 @@ bool ImGui::OpenFileBrowser(const std::string& InPath, FileBrowserOption InOptio
     return FileBrowser::Instance->OpenInternal(InPath, InOption, InExt);     
 }
 
-bool ImGui::FetchFileBrowserResult(std::string& OutPath)
+bool ImGui::FetchFileBrowserResult(const std::string& InPath, std::string& OutSelectedPath)
 {
     if (FileBrowser::Instance)
     {
-        if (FileBrowser::Instance->FetchInternal(OutPath))
+        if (FileBrowser::Instance->FetchInternal(InPath, OutSelectedPath))
         {
             // Delete instance when finished
             delete FileBrowser::Instance;
@@ -100,10 +100,13 @@ bool ImGui::FileBrowser::OpenInternal(const std::string& InPath, FileBrowserOpti
     return true; 
 }
 
-bool ImGui::FileBrowser::FetchInternal(std::string& OutPath)
+bool ImGui::FileBrowser::FetchInternal(const std::string& InPath, std::string& OutSelectedPath)
 {
     if (!IsOpen)
         return false;
+
+    if (OriginalPath != InPath)
+        return false; 
     
     bool result = false;
     ImGuiIO& io = GetIO();
@@ -148,7 +151,7 @@ bool ImGui::FileBrowser::FetchInternal(std::string& OutPath)
         SetCursorPosX(GetCursorPosX() + GetContentRegionAvail().x - widthNeeded);
         if (Button("Cancel", buttonSize))
         {
-            OutPath = OriginalPath;
+            OutSelectedPath = OriginalPath;
             result = true; 
         }
         SameLine(); 
@@ -157,15 +160,15 @@ bool ImGui::FileBrowser::FetchInternal(std::string& OutPath)
             switch (Option)
             {
             case FileBrowserOption::DIRECTORY:
-                OutPath = Path; 
+                OutSelectedPath = Path; 
                 break;
             case FileBrowserOption::FILE:
-                OutPath = Selected.empty() ?
+                OutSelectedPath = Selected.empty() ?
                     OriginalPath : Path + "\\" + Selected;
                 break;
             }
-            while (OutPath.starts_with('\\'))
-                OutPath = OutPath.substr(1);
+            while (OutSelectedPath.starts_with('\\'))
+                OutSelectedPath = OutSelectedPath.substr(1);
             result = true;
         } 
         EndPopup();
@@ -240,15 +243,11 @@ void ImGui::FileBrowser::RefreshGuess()
         {
             matchPath = entryPath;
             matchC = i;
-            LOG("Considered: " + matchPath + " for " + std::to_string(i)); 
         }
     }
 
     if (matchC > 0)
-    {
         NavigationGuess = matchPath;
-        LOG("Guess: " + NavigationGuess); 
-    }
 }
 
 bool ImGui::FileBrowser::TryPopPath()
@@ -352,5 +351,3 @@ void ImGui::FileBrowser::EditContent()
         EndListBox();
     }
 }
-
-

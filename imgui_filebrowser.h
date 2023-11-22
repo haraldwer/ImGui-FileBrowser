@@ -18,7 +18,7 @@ namespace ImGui
         FileBrowser() = default; 
         inline static FileBrowser* Instance = nullptr;
         bool OpenInternal(const std::string& InPath, FileBrowserOption InOption, const std::set<std::string>& InExt);
-        bool FetchInternal(std::string& OutPath);
+        bool FetchInternal(const std::string& InPath, std::string& OutSelectedPath);
     
     private:
 
@@ -53,6 +53,6 @@ namespace ImGui
     };
     
     bool OpenFileBrowser(const std::string& InPath, FileBrowserOption InOption = FileBrowserOption::FILE, const std::set<std::string>& InExt = {});
-    bool FetchFileBrowserResult(std::string& OutPath);
+    bool FetchFileBrowserResult(const std::string& InPath, std::string& OutSelectedPath);
 }
 

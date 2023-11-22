@@ -10,7 +10,7 @@ A simple file-browser for [dear-imgui](https://github.com/ocornut/imgui).
 There are two functions: 
 ```cpp
 bool ImGui::OpenFileBrowser(const std::string& InPath, FileBrowserOption InOption = FileBrowserOption::FILE, const std::set<std::string>& InExt = {});
-bool ImGui::FetchFileBrowserResult(std::string& OutPath);
+bool ImGui::FetchFileBrowserResult(const std::string& InPath, std::string& OutSelectedPath);
 ```
 
 There are some QOL tricks in the browser: 
@@ -25,7 +25,7 @@ if (ImGui::Button("Pick file"))
 	ImGui::OpenFileBrowser(defaultPath);
 
 std::string result;
-if (ImGui::FetchFileBrowserResult(result))
+if (ImGui::FetchFileBrowserResult(defaultPath, result))
 {
 	// Do something with the result
 }
@@ -38,3 +38,4 @@ if (ImGui::FetchFileBrowserResult(result))
 ## TODO: 
  - Multi-file select
  - Search / filters
+ - Currently relying on that ``defaultPath`` is different for each ``FetchFileBrowserResult()`` call

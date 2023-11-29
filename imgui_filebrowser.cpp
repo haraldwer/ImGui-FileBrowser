@@ -9,6 +9,7 @@
 #include "ImGui/imgui.h"
 #include "ImGui/imgui_custom.h"
 #include "ImGui/imgui_stdlib.h"
+#include "Utility/File.h"
 
 inline std::string ImGuiStdStringReplace(const std::string& InStr, const std::string& InSearch, const std::string& InRep)
 {
@@ -170,7 +171,8 @@ bool ImGui::FileBrowser::FetchInternal(const std::string& InPath, std::string& O
             while (OutSelectedPath.starts_with('\\'))
                 OutSelectedPath = OutSelectedPath.substr(1);
             result = true;
-        } 
+        }
+
         EndPopup();
     }
     
@@ -210,6 +212,11 @@ void ImGui::FileBrowser::Refresh()
             Files.push_back(entry.path().filename().string());
         }
     }
+
+    Selected = "";
+    RenameResult = "";
+    newEntry = false; 
+    NavigationGuess = ""; 
     
     // 3. Refresh hint
     RefreshGuess();
@@ -307,47 +314,189 @@ void ImGui::FileBrowser::EditNavigation()
 
 void ImGui::FileBrowser::EditContent()
 {
+    constexpr ImVec2 buttonSize(100.f, 0.f);
+    
+    if (Button("New", buttonSize))
+    {
+        Refresh();
+        
+        // We're creating a new entry and
+        // using the rename feature to select a name
+        std::string newFileName = "untitled";
+        newEntry = true; 
+        Selected = newFileName;
+        RenameResult = newFileName;
+    }
+    
+    bool disabled = Selected.empty(); 
+    if (disabled)
+        BeginDisabled();
+    
+    SameLine();
+    if (Button("Duplicate", buttonSize))
+    {
+        // Duplicate current file / directory
+        std::string duplicate = TryDuplicate(Selected); 
+        if (!duplicate.empty())
+        {
+            std::string prevSelected = Selected; 
+            Refresh();
+            Selected = prevSelected;
+        }
+    }
+    
+    SameLine();
+    if (Button("Rename", buttonSize))
+    {
+        // Rename current entry
+        RenameResult = Selected;
+    }
+    
+    SameLine();
+    if (Button("Delete", buttonSize))
+    {
+        // Delete current file / directory
+        if (TryDelete(Selected))
+            Refresh();
+    }
+    
+    if (disabled)
+        EndDisabled();
+        
+    
     const ImGuiStyle style = GetStyle(); 
     const ImVec2 size = {
         Width - style.WindowPadding.x * 2.0f,
-        Height - style.WindowPadding.y * 2.0f - 90.0f 
+        Height - style.WindowPadding.y * 2.0f - 115.0f 
     };
     if (BeginListBox("##FileBrowserContent", size))
     {
         Spacing();
         Spacing();
+
+        if (!Path.empty())
+            if (Selectable("  ..##FileListBack"))
+                TryPopPath();
         
-        static std::string potentialDir;
+        bool renaming = !RenameResult.empty();
+        
         std::string newDir;
         for (auto& dir : Directories)
         {
-            if (Selectable(dir.c_str(), potentialDir == dir))
+            if (ContentEntry(dir, true))
             {
-                if (potentialDir == dir)
+                if (dir == Selected)
                 {
-                    newDir = dir;
-                    potentialDir = ""; 
+                    newDir = dir; 
                 }
-                Selected = ""; 
-                potentialDir = dir;
+                else
+                {
+                    Selected = dir;
+                    RenameResult = ""; 
+                }
             }
         }
 
         for (auto& file : Files)
         {
-            if (Selectable(file.c_str(), file == Selected))
+            if (ContentEntry(file, false))
             {
                 Selected = file;
-                potentialDir = ""; 
+                RenameResult = ""; 
             }
         }
 
+        if (newEntry)
+            ContentEntry(Selected, false);
+
         if (!newDir.empty())
             TryApplyPath(Path + "\\" + newDir);
+
+        if (renaming && RenameResult.empty())
+            Refresh();
 
         Spacing();
         Spacing();
 
         EndListBox();
     }
+}
+
+bool ImGui::FileBrowser::ContentEntry(const std::string& InEntry, bool InIsDir)
+{
+    const bool selected = Selected == InEntry;
+    if (selected && !RenameResult.empty())
+    {
+        constexpr ImGuiInputTextFlags flags =
+            ImGuiInputTextFlags_EnterReturnsTrue |
+            ImGuiInputTextFlags_EscapeClearsAll |
+            ImGuiInputTextFlags_CharsNoBlank;
+        if (InputText("##ListEntryRename", &RenameResult, flags))
+        {
+            TryApplyRename(Selected, RenameResult);
+            RenameResult = "";
+        }
+        return false; 
+    }
+    return Selectable(((InIsDir ? "- " : "  ") + InEntry + "##ListEntry").c_str(), selected);
+}
+
+bool ImGui::FileBrowser::TryApplyRename(const std::string& InPreviousName, const std::string& InNewName) const
+{
+    const std::filesystem::path newPath(GetRelative(Path + "\\" + InNewName));
+    const std::filesystem::path oldPath(GetRelative(Path + "\\" + InPreviousName));
+
+    if (std::filesystem::exists(newPath))
+        return false;
+
+    if (!std::filesystem::exists(oldPath))
+    {
+        // Do not rename, instead create file / directory
+        if (newPath.has_extension())
+        {
+            // Create file
+            Utility::WriteFile(Path + "\\" + InNewName, "");
+        }
+        else
+        {
+            // Create dir
+            std::filesystem::create_directory(newPath); 
+        }
+    }
+    else
+    {
+        std::filesystem::rename(oldPath, newPath);   
+    }
+    
+    return std::filesystem::exists(newPath);
+}
+
+bool ImGui::FileBrowser::TryDelete(const std::string& InName) const
+{
+    const std::filesystem::path path(GetRelative(Path + "\\" + InName));
+    if (!std::filesystem::exists(path))
+        return false;
+    return std::filesystem::remove_all(path); 
+}
+
+std::string ImGui::FileBrowser::TryDuplicate(const std::string& InName) const
+{
+    const std::filesystem::path path(GetRelative(Path + "\\" + InName));
+    if (!std::filesystem::exists(path))
+        return {};
+    int copyC = 0;
+    while (copyC < 100)
+    {
+        copyC++;
+        const std::string newName = InName + "_" + std::to_string(copyC);
+        const std::filesystem::path newPath(GetRelative(Path + "\\" + newName));
+        if (!std::filesystem::exists(newPath))
+        {
+            std::filesystem::copy(path, newPath);
+            if (std::filesystem::exists(newPath))
+                return newName;
+            return {};
+        }
+    }
+    return {};
 }

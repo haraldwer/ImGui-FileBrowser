@@ -35,13 +35,20 @@ namespace ImGui
         
         void EditNavigation();
         void EditContent();
+
+        bool ContentEntry(const std::string& InEntry, bool InIsDir);
+        bool TryApplyRename(const std::string& InPreviousName, const std::string& InNewName) const;
+        bool TryDelete(const std::string& InName) const;
+        std::string TryDuplicate(const std::string& InName) const;
         
         bool IsOpen = false; 
         std::string OriginalPath;
         std::string Path;
         std::string NavigationGuess;
         std::string EditedPath;
-        std::string Selected; 
+        std::string Selected;
+        std::string RenameResult; 
+        bool newEntry = false;
         std::set<std::string> Ext;
         FileBrowserOption Option = FileBrowserOption::FILE;
         
@@ -51,7 +58,7 @@ namespace ImGui
         std::vector<std::string> Directories;
         std::vector<std::string> Files;
     };
-    
+
     bool OpenFileBrowser(const std::string& InPath, FileBrowserOption InOption = FileBrowserOption::FILE, const std::set<std::string>& InExt = {});
     bool FetchFileBrowserResult(const std::string& InPath, std::string& OutSelectedPath);
 }
